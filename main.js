@@ -23,8 +23,13 @@ bxRulDisplay = document.getElementById('bxRulDisplay');
 bxFactDisplay = document.getElementById('bxFactDisplay');
 btnFormRun = document.getElementById('btnFormRun');
 
+btnSave = document.getElementById('btnSave');
+btnImport = document.getElementById('btnImport');
+btnImportModal = document.getElementById('btnImportModal');
+formImport = document.getElementById('formImport');
+upload = document.getElementById('upload');
+
 structure = {
-    'name': 'test',
     'vars': [],
     'rules': []
 }
@@ -89,37 +94,69 @@ function renderSelect() {
     }
 }
 
-function setCellClickListener(name) {
-    activeStr = ''
-    if (name == 'lnkReg') {
-        activeStr = 'activeReg'
-    } else if (name == 'lnkVar') {
-        activeStr = 'activeVar'
-    }
-
-    lnk = document.getElementsByName(name);
+function setVarLnkListener() {
+    lnk = document.getElementsByName('lnkVar');
     lnk.forEach(element => {
         element.addEventListener('click', (e) => {
-            console.log(active[activeStr]);
-            console.log(lnk[active[activeStr]]);
-            if (lnk[active[activeStr]] == undefined || lnk[active[activeStr]] != e.target) {
-                console.log('1');
-                if (lnk[active[activeStr]] != undefined && lnk[active[activeStr]] != e.target) {
-                    console.log('2');
-                    lnk[active[activeStr]].classList.remove('active')
+            lnkList = Array.from(e.target.parentNode.children)
+            if (lnkList[active['activeVar']] == undefined || lnkList[active['activeVar']] != e.target) {
+                if (lnkList[active['activeVar']] != undefined && lnkList[active['activeVar']] != e.target) {
+                    lnkList[active['activeVar']].classList.remove('active')
                 }
                 e.target.classList.add('active')
-                active[activeStr] = Array.from(e.target.parentNode.children).indexOf(e.target);
+                active['activeVar'] = Array.from(e.target.parentNode.children).indexOf(e.target);
             } else {
-                console.log('3');
-                lnk[active[activeStr]].classList.remove('active')
-                active[activeStr] = -1
+                lnkList[active['activeVar']].classList.remove('active')
+                active['activeVar'] = -1
             }
-            if (activeStr == 'activeReg') {
-                renderSelect()
-            }
+            renderSelect()
         })
     })
+}
+
+function setRegLnkListener() {
+    lnk = document.getElementsByName('lnkReg');
+    lnk.forEach(element => {
+        element.addEventListener('click', (e) => {
+            lnkList = Array.from(e.target.parentNode.children)
+            if (lnkList[active['activeReg']] == undefined || lnkList[active['activeReg']] != e.target) {
+                if (lnkList[active['activeReg']] != undefined && lnkList[active['activeReg']] != e.target) {
+                    lnkList[active['activeReg']].classList.remove('active')
+                }
+                e.target.classList.add('active')
+                active['activeReg'] = Array.from(e.target.parentNode.children).indexOf(e.target);
+            } else {
+                lnkList[active['activeReg']].classList.remove('active')
+                active['activeReg'] = -1
+            }
+            renderSelect()
+        })
+    })
+}
+
+function renderAll() {
+    varList.innerHTML = ''
+    regList.innerHTML = ''
+    console.info('Render', structure);
+    structure['vars'].forEach((e) => {
+        varList.innerHTML += `<a href='#' class='list-group-item list-group-item-action' name='lnkVar' id='${e['name']}'>
+            ${e['name']}
+            ${
+                e['value'].map((el) => {
+                    return `
+                        <ul>
+                            <li>${el}</li>
+                        </ul>
+                    `
+                }).join('')
+            }
+        </a>`
+        
+    })
+    structure['rules'].forEach((e) => {
+        regList.innerHTML += `<a href='#' class='list-group-item list-group-item-action' name='lnkReg' id='${e['name']}'>${e['name']}</a>`
+    })
+    
 }
 
 frmVar.addEventListener('submit', (e) => {
@@ -152,7 +189,7 @@ frmVar.addEventListener('submit', (e) => {
                 window.alert('Esta variável já existe')
             }
         }
-        setCellClickListener('lnkVar')
+        setVarLnkListener()
     }
     e.preventDefault();
 })
@@ -175,7 +212,7 @@ frmReg.addEventListener('submit', (e) => {
         } else {
             window.alert('Esta regra já existe')
         }
-        setCellClickListener('lnkReg')
+        setRegLnkListener()
     }
     e.preventDefault();
 })
@@ -266,7 +303,7 @@ btnRun.addEventListener('click', (e) => {
         const varObj = structure['vars'][i];
 
         finalForm.innerHTML += `
-            <div class="col-5">
+            <div class="col-5 my-3">
                 <select class="form-select" disabled>
                     <option value="${varObj['name']}">${varObj['name']}</option>
                 </select>
@@ -274,7 +311,7 @@ btnRun.addEventListener('click', (e) => {
         `
         if (varObj['value'].length > 0) {
             finalForm.innerHTML += `
-                <div class="col-5">
+                <div class="col-5 my-3">
                     <select class="form-select" id="${varObj['name']}Result">
                         ${varObj['value'].map((el) => {
                             return `
@@ -286,7 +323,7 @@ btnRun.addEventListener('click', (e) => {
             `
         } else {
             finalForm.innerHTML += `
-                <div class="col-5">
+                <div class="col-5 my-3">
                     <select class="form-select" id="${varObj['name']}Result">
                         <option value="true">True</option>
                         <option value="false">False</option>
@@ -302,7 +339,6 @@ btnFormRun.addEventListener('click', (e) => {
     structure['rules'].forEach((el) => {
         pastOperator = ''
         ruleResult = false
-        console.log(el);
         el['value'].forEach((ele) => {
             projection = document.getElementById(ele['var']+'Result')
             intendedVal = ele['value'] ? ele['value'] : 'true'
@@ -315,27 +351,45 @@ btnFormRun.addEventListener('click', (e) => {
             }
             pastOperator = ele['operator']
         })
-        console.log(ruleResult);
         if (ruleResult) {
-            result.push(el['result'])
+            result.push(el['result'].map((elem) => elem['var'] + ': ' + elem['value']))
         }
     })
-    console.log(result);
-    // e.target.parentElement.close()
+    window.alert(result.join('\n'))
 })
 
-// varSelect.addEventListener()
+btnSave.addEventListener('click', (e) => {
+    dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(structure));
+    dlAnchorElem = document.getElementById('downloadAnchorElem');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "scene.json");
+    dlAnchorElem.click();
+})
 
-setCellClickListener('lnkVar')
-setCellClickListener('lnkReg')
+btnImportModal.addEventListener('click', (e) => {
+    formImport.showModal()
+})
+
+btnImport.addEventListener('click', (e) => {
+    fl_files = upload.files
+    fl_file = fl_files[0]
+    reader = new FileReader();
+
+    display_file = (e) => {
+        structure = e.target.result
+        structure = JSON.parse(structure)
+        renderAll()
+        setVarLnkListener()
+        setRegLnkListener()
+        renderSelect()
+    }
+
+    on_reader_load = ( fl ) => display_file;
+    reader.onload = on_reader_load(fl_file)
+    reader.readAsText(fl_file)
+    e.target.parentElement.close()
+})
+
+setVarLnkListener()
+setRegLnkListener()
 renderSelect()
-
-/*
-<a href='#' class='list-group-item list-group-item-action active' aria-current='true'>
-The current link item
-</a>
-<a href='#' class='list-group-item list-group-item-action'>A second link item</a>
-<a href='#' class='list-group-item list-group-item-action'>A third link item</a>
-<a href='#' class='list-group-item list-group-item-action'>A fourth link item</a>
-<a class='list-group-item list-group-item-action disabled' aria-disabled='true'>A disabled link item</a>
-*/
