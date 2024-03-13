@@ -1,13 +1,15 @@
 txtInput = document.getElementById('txtInput');
 btnVarSubmit = document.getElementById('btnVarSubmit');
+btnVarDel = document.getElementById('btnVarDel');
 frmVar = document.getElementById('frmVar');
 varList = document.getElementById('varList');
 
 txtRegras = document.getElementById('txtRegras');
 btnRegSubmit = document.getElementById('btnRegSubmit');
+
 frmReg = document.getElementById('frmReg');
 regList = document.getElementById('regList');
-
+btnRegDel = document.getElementById('btnRegDel');
 varSelectModal = document.getElementById('varSelectModal');
 btnVarSelectSave = document.getElementById('btnVarSelectSave');
 varNameSelect = document.getElementById('varNameSelect');
@@ -28,6 +30,9 @@ btnImport = document.getElementById('btnImport');
 btnImportModal = document.getElementById('btnImportModal');
 formImport = document.getElementById('formImport');
 upload = document.getElementById('upload');
+
+whyModal = document.getElementById('whyModal');
+txtAreaWhy = document.getElementById('txtAreaWhy');
 
 structure = {
     'vars': [],
@@ -50,22 +55,22 @@ function getActiveCell(name) {
 }
 
 function renderSelect() {
+    bxRulDisplay.innerHTML = ''
+    bxFactDisplay.innerHTML = ''
     if (structure['rules'][active['activeReg']] != undefined) {
-        bxRulDisplay.innerHTML = ''
-        bxFactDisplay.innerHTML = ''
         structure['rules'][active['activeReg']]['value'].forEach((el) => {
             bxRulDisplay.innerHTML += `
-                <div class="col-5">
+                <div class="col-5 my-3">
                     <select class="form-select" disabled>
                         <option value="${el['var']}">${el['var']}</option>
                     </select>
                 </div>
-                <div class="col-5">
+                <div class="col-5 my-3">
                     <select class="form-select" disabled>
                         <option value="${el['value']}">${el['value']}</option>
                     </select>
                 </div>
-                <div class="col-2">
+                <div class="col-2 my-3">
                     <select class="form-select" disabled>
                         <option value="${el['operator']}">${el['operator']}</option>
                     </select>
@@ -74,17 +79,17 @@ function renderSelect() {
         })
         structure['rules'][active['activeReg']]['result'].forEach((el) => {
             bxFactDisplay.innerHTML += `
-                <div class="col-5">
+                <div class="col-5 my-3">
                     <select class="form-select" disabled>
                         <option value="${el['var']}">${el['var']}</option>
                     </select>
                 </div>
-                <div class="col-5">
+                <div class="col-5 my-3">
                     <select class="form-select" disabled>
                         <option value="${el['value']}">${el['value']}</option>
                     </select>
                 </div>
-                <div class="col-2">
+                <div class="col-2 my-3">
                     <select class="form-select" disabled>
                         <option value="${el['operator']}">${el['operator']}</option>
                     </select>
@@ -137,6 +142,10 @@ function setRegLnkListener() {
 function renderAll() {
     varList.innerHTML = ''
     regList.innerHTML = ''
+    active = {
+        'activeVar': -1,
+        'activeReg': -1
+    }
     console.info('Render', structure);
     structure['vars'].forEach((e) => {
         varList.innerHTML += `<a href='#' class='list-group-item list-group-item-action' name='lnkVar' id='${e['name']}'>
@@ -157,6 +166,30 @@ function renderAll() {
         regList.innerHTML += `<a href='#' class='list-group-item list-group-item-action' name='lnkReg' id='${e['name']}'>${e['name']}</a>`
     })
     
+}
+
+function whyShowModal(name) {
+    console.log('why');
+    whyModal.showModal()
+    resultString = ''
+    structure['rules'].forEach((e) => {
+        include = false
+        e['value'].every((el) => {
+            if (el['var'] == name) {
+                include = true
+                return false
+            }
+            return true
+        })
+        if (include) {
+            resultString += 'Se \n'
+            resultString += e['value'].map((elem) => elem['var'] + ': ' + (elem['value'] ? elem['value'] : 'True') + '\n')
+            resultString += 'Então \n'
+            resultString += e['result'].map((elem) => elem['var'] + ': ' + (elem['value'] ? elem['value'] : 'True') + '\n')
+            resultString += '\n'
+        }
+    })
+    txtAreaWhy.value = resultString
 }
 
 frmVar.addEventListener('submit', (e) => {
@@ -287,7 +320,7 @@ btnVarSelectSave.addEventListener('click', (e) => {
         'operator': varOpSelect.value
     })
     e.target.parentElement.close()
-    renderSelect()    
+    renderSelect()
 })
 
 closeModal.forEach((el) => {
@@ -299,35 +332,49 @@ closeModal.forEach((el) => {
 btnRun.addEventListener('click', (e) => {
     formModal.showModal()
     finalForm.innerHTML = ''
+    varArray = new Set()
+
+    structure['rules'].forEach((el) => {
+        el['value'].forEach((ele) => {
+            varArray.add(ele['var'])
+        })
+    })
+
     for (let i = 0; i < structure['vars'].length; i++) {
         const varObj = structure['vars'][i];
-
-        finalForm.innerHTML += `
-            <div class="col-5 my-3">
-                <select class="form-select" disabled>
-                    <option value="${varObj['name']}">${varObj['name']}</option>
-                </select>
-            </div>
-        `
-        if (varObj['value'].length > 0) {
+        if (varArray.has(varObj['name'])) {
             finalForm.innerHTML += `
                 <div class="col-5 my-3">
-                    <select class="form-select" id="${varObj['name']}Result">
-                        ${varObj['value'].map((el) => {
-                            return `
-                                <option value="${el}">${el}</option>
-                            `
-                        })}
+                    <select class="form-select" disabled>
+                        <option value="${varObj['name']}">${varObj['name']}</option>
                     </select>
                 </div>
             `
-        } else {
+            if (varObj['value'].length > 0) {
+                finalForm.innerHTML += `
+                    <div class="col-5 my-3">
+                        <select class="form-select" id="${varObj['name']}Result">
+                            ${varObj['value'].map((el) => {
+                                return `
+                                    <option value="${el}">${el}</option>
+                                `
+                            })}
+                        </select>
+                    </div>
+                `
+            } else {
+                finalForm.innerHTML += `
+                    <div class="col-5 my-3">
+                        <select class="form-select" id="${varObj['name']}Result">
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>
+                    </div>
+                `
+            }
             finalForm.innerHTML += `
-                <div class="col-5 my-3">
-                    <select class="form-select" id="${varObj['name']}Result">
-                        <option value="true">True</option>
-                        <option value="false">False</option>
-                    </select>
+                <div class="col-2 my-3">
+                    <button class="btn btn-primary" onclick="whyShowModal('${varObj['name']}')">?</button>
                 </div>
             `
         }
@@ -341,18 +388,18 @@ btnFormRun.addEventListener('click', (e) => {
         ruleResult = false
         el['value'].forEach((ele) => {
             projection = document.getElementById(ele['var']+'Result')
-            intendedVal = ele['value'] ? ele['value'] : 'true'
+            intendedVal = ele['value'] ? (projection.value==ele['value']) : (projection.value=='true')
             if (pastOperator=='E') {
-                ruleResult = (projection.value=='true' && ruleResult)
+                ruleResult = (intendedVal && ruleResult)
             } else if (pastOperator=='OU') {
-                ruleResult = (projection.value=='true' || ruleResult)
+                ruleResult = (intendedVal || ruleResult)
             } else {
-                ruleResult = projection.value=='true'
+                ruleResult = intendedVal
             }
             pastOperator = ele['operator']
         })
         if (ruleResult) {
-            result.push(el['result'].map((elem) => elem['var'] + ': ' + elem['value']))
+            result.push(el['result'].map((elem) => elem['var'] + ': ' + elem['value'] + '\n'))
         }
     })
     window.alert(result.join('\n'))
@@ -388,6 +435,54 @@ btnImport.addEventListener('click', (e) => {
     reader.onload = on_reader_load(fl_file)
     reader.readAsText(fl_file)
     e.target.parentElement.close()
+})
+
+btnVarDel.addEventListener('click', (e) => {
+    if (active['activeVar'] == -1) {
+        window.alert('Por favor selecione uma variável antes')
+    } else {
+        del = ''
+        structure['rules'].every((e) => {
+            e['value'].every((el) => {
+                if (el['var'] == structure['vars'][active['activeVar']]['name']) {
+                    del = e['name']
+                    return false
+                }
+                return true
+            })
+            e['result'].every((el) => {
+                if (el['var'] == structure['vars'][active['activeVar']]['name']) {
+                    del = e['name']
+                    return false
+                }
+                return true
+            })
+            console.log(del);
+            return (del=='')
+        })
+
+        if (del!='') {
+            window.alert('Existe uma regra com esta variável')
+        } else {
+            structure['vars'].splice(active['activeVar'], 1)
+            renderAll()
+            setVarLnkListener()
+            setRegLnkListener()
+            renderSelect()
+        }
+    }
+})
+
+btnRegDel.addEventListener('click', (e) => {
+    if (active['activeReg'] == -1) {
+        window.alert('Por favor selecione uma variável antes')
+    } else {
+        structure['rules'].splice(active['activeReg'], 1)
+        renderAll()
+        setVarLnkListener()
+        setRegLnkListener()
+        renderSelect()
+    }
 })
 
 setVarLnkListener()
